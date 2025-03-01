@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using AgrlyAPI.Models.User;
 
 namespace AgrlyAPI.Controllers.users
 {
@@ -7,10 +8,14 @@ namespace AgrlyAPI.Controllers.users
     [ApiController]
     public class usersController : ControllerBase
     {
+
+		public User user = new User();
+
+
 		[HttpGet]
 		public IActionResult Get()
 		{
-			return Ok( "Hello, World!" );
+			return Ok( user );
 		}
 	}
 }
