@@ -1,34 +1,46 @@
 ﻿using AgrlyAPI.Models.Addresss;
 using AgrlyAPI.Models.Billings;
+using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 
 namespace AgrlyAPI.Models.User;
-
-public class User
+[Table( "users" )]
+public class User : BaseModel
 {
-	public Guid Id { get; set; }
+	[PrimaryKey("id",false)]
+	public long Id { get; set; }
+	[Column( "username" )]
 	public string Username { get; set; }
+	[Column( "first_name" )]
 	public string FirstName { get; set; }
+	[Column( "last_name" )]
 	public string LastName { get; set; }
+	[Column( "email" )]
 	public string Email { get; set; }
+	[Column( "password" )]
 	public string Password { get; set; }
-	public bool isAdmin { get; set; } = false;
-	public string? Token { get; set; }
-	public List<Billing>? Billings { get; set; }
-	public List<Address>? Addresses { get; set; }
-
+	[Column( "created_at")]
+	public DateTime CreatedAt { get; set; }
+	//[Column( "is_admin" )]
+	//public bool isAdmin { get; set; } = false;
+	//[Column( "token" )]
+	//public string? Token { get; set; }
+	//[Column("billing_id")]
+	//public Billing? BillingID { get; set; }
+	//[Column( "address_id" )]
+	//public Address? AddressID { get; set; }
 
 	public User()
 	{
-		Id = Guid.NewGuid();
 		Username = "";
 		FirstName = "";
 		LastName = "";
 		Email = "";
 		Password = "";
-		isAdmin = false;
-		Token = null;
-		Billings = new List<Billing>();
-		Addresses = new List<Address>();
+		//isAdmin = false;
+		//Token = null;
+		//BillingID = new Billing();
+		//AddressID = new Address();
 	}
 
 	public User( string username, string firstName, string lastName, string email, string password )
@@ -40,61 +52,4 @@ public class User
 		Password = password;
 	}
 
-	public void AddBilling( Billing billing )
-	{
-		if ( Billings == null )
-		{
-			Billings = new List<Billing>();
-		}
-		Billings.Add( billing );
-	}
-	public void AddAddress( Address address )
-	{
-		if ( Addresses == null )
-		{
-			Addresses = new List<Address>();
-		}
-		Addresses.Add( address );
-	}
-	public List<Billing> GetBillings()
-	{
-		if( Billings == null )
-		{
-			Billings = new List<Billing>();
-		}
-		return Billings;
-	}
-	public List<Address> GetAddresses()
-	{
-		if ( Addresses == null )
-		{
-			Addresses = new List<Address>();
-		}
-		return Addresses;
-	}
-	public void RemoveBilling( Billing billing )
-	{
-		if ( Billings != null )
-		{
-			Billings.Remove( billing );
-		}
-	}
-	public void RemoveAddress( Address address )
-	{
-		if ( Addresses != null )
-		{
-			Addresses.Remove( address );
-		}
-	}
-	public void UpdateBilling( Billing billing )
-	{
-		if ( Billings != null )
-		{
-			var index = Billings.FindIndex( b => b.Id == billing.Id );
-			if ( index != -1 )
-			{
-				Billings[index] = billing;
-			}
-		}
-	}
 }
