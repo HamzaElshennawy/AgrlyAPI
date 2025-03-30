@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using AgrlyAPI.Models.User;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AgrlyAPI.Controllers.users
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class usersController : ControllerBase
+	[Authorize]
+	public class usersController : ControllerBase
     {
 
 		public User user = new User();
