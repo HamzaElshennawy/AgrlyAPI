@@ -11,7 +11,7 @@ namespace AgrlyAPI.Controllers
 	public class docs : ControllerBase
 	{
 		[HttpGet]
-		public IActionResult Get() => Redirect( "/swagger" );
+		public IActionResult Get() => Redirect( "http://localhost:5258/swagger" );
 		
 	}
 }
