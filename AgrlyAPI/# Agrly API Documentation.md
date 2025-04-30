@@ -59,7 +59,7 @@ Response:
 }
 ```
 
-# Authentication
+## Authentication
 
 **For protected endpoints, include the JWT token in the request header:**
 
