@@ -7,7 +7,6 @@ This is the documentation for the Agrly API, a .NET 9.0 Web API project using JW
 - [Getting Started](#getting-started)
 - [Authentication](#authentication)
 - [API Endpoints](#api-endpoints)
-- [Error Handling](#error-handling)
 - [Development Setup](#development-setup)
 - [Database Schema](#database-schema)
 
@@ -60,7 +59,7 @@ Response:
 }
 ```
 
-## Using Authentication
+# Authentication
 
 **For protected endpoints, include the JWT token in the request header:**
 
@@ -146,7 +145,7 @@ Run
 dotnet watch
 ```
 
-### Access points:
+### Access points
 
 Development: <https://localhost:7202>
 
