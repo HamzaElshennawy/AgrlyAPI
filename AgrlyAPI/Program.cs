@@ -13,12 +13,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers().AddNewtonsoftJson();
-IConfiguration config = new ConfigurationBuilder()
-			.AddEnvironmentVariables()
-			.Build();
+//IConfiguration config = new ConfigurationBuilder()
+//			.AddEnvironmentVariables()
+//			.Build();
 builder.Services.AddScoped<Supabase.Client>( _ =>
 	new Supabase.Client( builder.Configuration["SupabaseUrl"]!,
-	config["SupabaseKey"], new Supabase.SupabaseOptions
+	builder.Configuration["SupabaseKey"], new Supabase.SupabaseOptions
 	{
 		AutoRefreshToken = true,
 		AutoConnectRealtime = true,
@@ -35,9 +35,9 @@ builder.Services.AddAuthentication( options =>
 	options.SaveToken = true;
 	options.TokenValidationParameters = new TokenValidationParameters
 	{
-		ValidIssuer = config["JwtConfig:Issuer"],
-		ValidAudience = config["JwtConfig:Audiance"],
-		IssuerSigningKey = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( config["JwtConfig:Key"]! ) ),
+		ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
+		ValidAudience = builder.Configuration["JwtConfig:Audiance"],
+		IssuerSigningKey = new SymmetricSecurityKey( Encoding.UTF8.GetBytes( builder.Configuration["JwtConfig:Key"]! ) ),
 		ValidateIssuer = true,
 		ValidateAudience = true,
 		ValidateLifetime = true,

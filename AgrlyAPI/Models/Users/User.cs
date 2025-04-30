@@ -4,23 +4,31 @@ using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
 namespace AgrlyAPI.Models.User;
-[Table( "users" )]
+
+[Table("users")]
 public class User : BaseModel
 {
-	[PrimaryKey("id",false)]
+	[PrimaryKey("id", false)]
 	public long Id { get; set; }
-	[Column( "username" )]
+
+	[Column("username")]
 	public string Username { get; set; }
-	[Column( "first_name" )]
+
+	[Column("first_name")]
 	public string FirstName { get; set; }
-	[Column( "last_name" )]
+
+	[Column("last_name")]
 	public string LastName { get; set; }
-	[Column( "email" )]
+
+	[Column("email")]
 	public string Email { get; set; }
-	[Column( "password" )]
+
+	[Column("password")]
 	public string Password { get; set; }
-	[Column( "created_at")]
+
+	[Column("created_at")]
 	public DateTime CreatedAt { get; set; }
+
 	//[Column( "is_admin" )]
 	//public bool isAdmin { get; set; } = false;
 	//[Column( "token" )]
@@ -43,7 +51,7 @@ public class User : BaseModel
 		//AddressID = new Address();
 	}
 
-	public User( string username, string firstName, string lastName, string email, string password )
+	public User(string username, string firstName, string lastName, string email, string password)
 	{
 		Username = username;
 		FirstName = firstName;
@@ -51,5 +59,4 @@ public class User : BaseModel
 		Email = email;
 		Password = password;
 	}
-
 }
