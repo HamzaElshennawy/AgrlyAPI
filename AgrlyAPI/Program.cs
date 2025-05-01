@@ -3,6 +3,7 @@ using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder( args );
@@ -11,8 +12,9 @@ var builder = WebApplication.CreateBuilder( args );
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
 builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddOpenApi();
 //IConfiguration config = new ConfigurationBuilder()
 //			.AddEnvironmentVariables()
 //			.Build();
@@ -56,9 +58,15 @@ if ( app.Environment.IsDevelopment() )
 {
 	// redirect to swagger in development mode only.
 	// TODO: implement the base url while in production mode to handle the request of the base url.
-	app.MapGet( "/", () => Results.Redirect( "http://localhost:5258/swagger" ) );
-	app.UseSwagger();
-	app.UseSwaggerUI();
+	app.MapGet( "/", () => Results.Redirect( "http://localhost:5258/scalar" ) );
+	app.MapOpenApi();
+	//app.UseSwagger();
+	//app.UseSwaggerUI();
+	app.MapScalarApiReference( options =>
+	{
+		options.WithTheme( ScalarTheme.BluePlanet )
+			.WithDefaultHttpClient( ScalarTarget.CSharp, ScalarClient.Http );
+	} );
 }
 
 
