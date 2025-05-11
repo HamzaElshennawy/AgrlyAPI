@@ -12,11 +12,7 @@ namespace AgrlyAPI.Controllers.users
 	[Authorize]
 	public class usersController : ControllerBase
 	{
-		public User user = new User();
-
-		// This method needs some validation before executing
-		// TODO: Validate the request
-		// This request preform the basic functionality
+		
 		[AllowAnonymous]
 		[HttpPost("adduser")]
 		public async Task<IActionResult> Post(User newuser, Supabase.Client client)
@@ -39,7 +35,7 @@ namespace AgrlyAPI.Controllers.users
 			if (existingUser.Models.Any())
 				return Conflict("Username already exists");
 
-			// Set creation timestamp
+			// Set the creation timestamp
 			newuser.CreatedAt = DateTime.UtcNow; // Use UTC time for consistency
 
 			// Hash password before saving
@@ -50,9 +46,6 @@ namespace AgrlyAPI.Controllers.users
 			return Ok(newuserId);
 		}
 
-		// This method needs some validation before executing
-		// TODO: Validate the request
-		// This request preform the basic functionality
 
 		[HttpGet("getallusers")]
 		public async Task<IActionResult> Get(Supabase.Client client)
@@ -63,41 +56,47 @@ namespace AgrlyAPI.Controllers.users
 			return Ok(response.Models);
 		}
 
-		// This method needs some validation before executing
-		// TODO: Validate the request
-		// This request preform the basic functionality
+		
 		[HttpDelete("deleteuser/{id}")]
-		public async Task<IActionResult> Delete(long id, Supabase.Client client)
-		{
-			// Validate ID
-			if (id <= 0)
-				return BadRequest("Invalid user ID");
+        public async Task<IActionResult> Delete(long id, Supabase.Client client)
+        {
+            if (id <= 0)
+                return BadRequest("Invalid user ID");
 
-			// Get current user's identity
-			var currentUsername = User.Identity?.Name;
-			if (string.IsNullOrEmpty(currentUsername))
-				return Unauthorized("User not authenticated");
+            var localCurrentUsername = User.Identity?.Name;
+
+            if (string.IsNullOrEmpty(localCurrentUsername))
+                return Unauthorized("User not authenticated");
+
+            var userIdClaim = long.Parse(User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            
+			var currentUserResponse = await client.From<User>().Where( u => u.Id == userIdClaim).Get();
+			var currentUser = currentUserResponse.Models.FirstOrDefault();
+
+			if ( currentUser == null )
+				return Unauthorized( "Current user not found" );
+
+			if ( currentUser.IsAdmin )
+			{
+				await client.From<User>().Where( u => u.Id == id ).Delete();
+				return Ok();
+			}
+			
 
 			// Check if user exists
-			var response = await client.From<User>().Where(u => u.Id == id).Get();
-			if (!response.Models.Any())
-				return NotFound("User not found");
+			var response = await client.From<User>().Where( u => u.Id == id ).Get();
+			if ( !response.Models.Any() )
+				return NotFound( "User not found" );
 
 			var userToDelete = response.Models.First();
 
-			// Authorization check:
-			// 1. User can delete their own account
-			// 2. Add additional role-based checks if needed
-			if (userToDelete.Username != currentUsername)
+			if ( userToDelete.Username != localCurrentUsername )
 			{
-				// Optional: Check if user has admin role
-				// var isAdmin = User.IsInRole("Admin");
-				// if (!isAdmin)
-				return Forbid("You don't have permission to delete this user");
+				return Forbid(); 
 			}
 
 			await client.From<User>().Where(u => u.Id == id).Delete();
-			return NoContent();
-		}
+			return Ok();
+        }
 	}
 }

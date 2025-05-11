@@ -29,8 +29,8 @@ public class User : BaseModel
 	[Column("created_at")]
 	public DateTime CreatedAt { get; set; }
 
-	//[Column( "is_admin" )]
-	//public bool isAdmin { get; set; } = false;
+    [Column("isAdmin")]
+    public bool IsAdmin { get; set; }
 	//[Column( "token" )]
 	//public string? Token { get; set; }
 	//[Column("billing_id")]
@@ -45,7 +45,7 @@ public class User : BaseModel
 		LastName = "";
 		Email = "";
 		Password = "";
-		//isAdmin = false;
+		IsAdmin = false;
 		//Token = null;
 		//BillingID = new Billing();
 		//AddressID = new Address();
