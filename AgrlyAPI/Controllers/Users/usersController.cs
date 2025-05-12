@@ -1,8 +1,6 @@
-﻿using System.Threading.Tasks;
-using AgrlyAPI.Models.User;
+﻿using AgrlyAPI.Models.User;
 using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgrlyAPI.Controllers.users
@@ -47,16 +45,53 @@ namespace AgrlyAPI.Controllers.users
 		}
 
 
-		[HttpGet("getallusers")]
-		public async Task<IActionResult> Get(Supabase.Client client)
-		{
-			var response = await client.From<User>().Get();
-			if (response.Models is null)
-				return BadRequest("No users found");
-			return Ok(response.Models);
-		}
+        [HttpGet("getallusers")]
+        public async Task<IActionResult> Get(Supabase.Client client)
+        {
+            var usersResponse = await client.From<User>().Get();
+            if (usersResponse.Models is null || usersResponse.Models.Count == 0)
+                return BadRequest("No users found");
 
-		
+            var users = usersResponse.Models;
+            var userIds = users.Select(u => u.Id).ToArray();
+
+            var transactionsResponse = await client
+                .From<Transactions>()
+                .Filter("sender_id", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
+                .Filter("receiver_id", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
+                .Get();
+
+            var billingsResponse = await client
+                .From<Billing>()
+                .Filter("user_id", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
+                .Get();
+
+            var transactions = transactionsResponse.Models;
+            var billings = billingsResponse.Models;
+
+            var userResponses = users.Select(user => new UserResponse
+            {
+                Id = user.Id,
+                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                Password = user.Password,
+                CreatedAt = user.CreatedAt,
+                IsAdmin = user.IsAdmin,
+                NationalID = user.NationalID,
+                Phone = user.Phone,
+                SentTransactions = transactions.Where(t => t.senderID == user.Id).Cast<Transactions?>().ToList(),
+                ReceivedTransactions = transactions.Where(t => t.receiverID == user.Id).Cast<Transactions?>().ToList(),
+                Billing = billings.Where(b => b.UserId == user.Id).Cast<Billing?>().ToList()
+            }).ToList();
+
+            return Ok(userResponses);
+        }
+
+
+
+
 		[HttpDelete("deleteuser/{id}")]
         public async Task<IActionResult> Delete(long id, Supabase.Client client)
         {
@@ -76,17 +111,24 @@ namespace AgrlyAPI.Controllers.users
 			if ( currentUser == null )
 				return Unauthorized( "Current user not found" );
 
+			// Check if user exists
+			var response = await client.From<User>().Where( u => u.Id == id ).Get();
+			if ( !response.Models.Any() )
+			{
+				return NotFound( "User not found" );
+			}
+			// Check if the current user is an admin
 			if ( currentUser.IsAdmin )
 			{
 				await client.From<User>().Where( u => u.Id == id ).Delete();
+				await client.From<Billing>()
+				.Where( b => b.UserId == id )
+				.Delete();
+				
 				return Ok();
 			}
 			
 
-			// Check if user exists
-			var response = await client.From<User>().Where( u => u.Id == id ).Get();
-			if ( !response.Models.Any() )
-				return NotFound( "User not found" );
 
 			var userToDelete = response.Models.First();
 
