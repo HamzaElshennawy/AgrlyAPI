@@ -20,39 +20,42 @@ public class MediaAssetsController : ControllerBase
 	}
 
 
-	/**
-	 * this method retrieves all the media files associated with the apartments owned by the user.
-	 * TODO: NOT WORKING YET!!!
-	 */
+	
 	[HttpGet( "apartments" )]
 	public async Task<IActionResult> GetOwnerApartmentMedia()
 	{
+		// Step 1: Extract the current user's ID from JWT claims
 		var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
 		if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var ownerId ) )
 		{
 			return Unauthorized( "Invalid or missing user ID." );
 		}
 
+		// Step 2: Fetch all apartments owned by this user
 		var apartmentsResponse = await _client
 			.From<Apartment>()
-			.Filter( "owner_id", Supabase.Postgrest.Constants.Operator.Equals, ownerId )
+			.Filter( "owner_id", Supabase.Postgrest.Constants.Operator.Equals, (int)ownerId )
 			.Get();
 
 		var apartments = apartmentsResponse.Models;
 		if ( apartments == null || apartments.Count == 0 )
-			return Ok( new List<Photos>() );
+		{
+			return Ok( new List<Photos>() ); // No apartments = no media
+		}
 
-		var apartmentIds = apartments.Select( a => a.Id ).ToList();
-		var apartmentIdCsv = string.Join( ",", apartmentIds );
+		// Step 3: Collect apartment IDs
+		var apartmentIds = apartments.Select( a => a.Id ).Cast<object>().ToList();
 
+		// Step 4: Fetch all media files linked to those apartments
 		var filesResponse = await _client
 			.From<Photos>()
-			.Filter( "apartment_id", Supabase.Postgrest.Constants.Operator.In, $"({apartmentIdCsv})" )
+			.Filter( "apartment_id", Supabase.Postgrest.Constants.Operator.In, apartmentIds )
 			.Get();
 
 		var files = filesResponse.Models;
 		return Ok( files );
 	}
+
 
 	[HttpPost( "upload" )]
 	public async Task<IActionResult> UploadMedia( IFormFile file)
@@ -95,6 +98,7 @@ public class MediaAssetsController : ControllerBase
 		{
 			UserID = userId,
 			FilePath = filePath,
+			PublicUrl = publicUrl,
 			Type = "apartment_photo",
 			ApartmetnID = 1,
 			UploadedAt = DateTime.UtcNow

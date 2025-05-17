@@ -14,6 +14,8 @@ public class Photos : BaseModel
 	public long ApartmetnID { get; set; }
 	[Column( "file_path" )]
 	public string? FilePath { get; set; }
+	[Column("public_url")]
+	public string? PublicUrl { get; set; }
 	[Column( "type" )]
 	public string? Type { get; set; }
 	[Column( "uploaded_at" )]
