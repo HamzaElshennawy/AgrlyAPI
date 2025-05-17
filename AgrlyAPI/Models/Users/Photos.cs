@@ -15,14 +15,8 @@ public class Photos : BaseModel
 	[Column( "file_path" )]
 	public string? FilePath { get; set; }
 	[Column( "type" )]
-	public FileType? Type { get; set; }
+	public string? Type { get; set; }
 	[Column( "uploaded_at" )]
 	public DateTime UploadedAt { get; set; }
 }
 
-public enum FileType
-{
-	profile,
-	national_id,
-	apartment_photo
-}
