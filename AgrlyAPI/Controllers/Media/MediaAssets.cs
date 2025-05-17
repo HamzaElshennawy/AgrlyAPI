@@ -103,10 +103,7 @@ public class MediaAssetsController : ControllerBase
 			ApartmetnID = 1,
 			UploadedAt = DateTime.UtcNow
 		};
-		Console.WriteLine( "User ID: ", photo.UserID );
-		Console.WriteLine( "File Path: ", photo.FilePath );
-		Console.WriteLine( "Type: ", photo.Type );
-		Console.WriteLine( "Uploaded at: ", photo.UploadedAt );
+
 		var insertResponse = await _client
 			.From<Photos>()
 			.Insert( photo );

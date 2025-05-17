@@ -57,8 +57,8 @@ namespace AgrlyAPI.Controllers.users
 
             var transactionsResponse = await client
                 .From<Transactions>()
-                .Filter("sender_id", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
-                .Filter("receiver_id", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
+                .Filter("senderid", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
+                .Filter("receiverid", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
                 .Get();
 
             var billingsResponse = await client
