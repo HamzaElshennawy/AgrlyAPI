@@ -21,7 +21,7 @@ public class Apartment : BaseModel
 	[Column( "location" )]
 	public string? Location { get; set; }
 
-	[Column( "price" )]
+	[Column( "price_per_night" )]
 	public decimal PricePerNight { get; set; }
 
 	//[Column( "is_available" )]

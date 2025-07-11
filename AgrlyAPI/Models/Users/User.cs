@@ -27,7 +27,7 @@ public class User : BaseModel
 	[Column("created_at")]
 	public DateTime CreatedAt { get; set; }
 
-    [Column("isAdmin")]
+    [Column("is_admin")]
     public bool IsAdmin { get; set; }
 
 	[Column( "nationalid" )]

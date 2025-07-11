@@ -7,19 +7,18 @@ namespace AgrlyAPI.Controllers.Users;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AuthenticateUser : ControllerBase
+public class AuthenticateUser( JwtService jwtService ) : ControllerBase
 {
-	private readonly JwtService _jwtService;
-
-	public AuthenticateUser(JwtService jwtService) => _jwtService = jwtService;
-
 	[AllowAnonymous]
 	[HttpPost("auth")]
 	public async Task<ActionResult<LoginResponseModel>> Login(LoginRequestModel request)
 	{
-		var response = await _jwtService.Authenticate(request);
+		var response = await jwtService.Authenticate(request);
 		if (response is null)
+		{
 			return Unauthorized("Invalid username or password");
+		}
+
 		return Ok(response);
 	}
 }

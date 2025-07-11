@@ -383,6 +383,10 @@ AgrlyAPI/
 
 ---
 
+## TODO:
+- Add Google Login and Signup
+
+---
 ## License
 
 This project is licensed under the MIT License.

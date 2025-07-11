@@ -1,5 +1,4 @@
-﻿using AgrlyAPI.Models;
-using AgrlyAPI.Models.Apartments;
+﻿using AgrlyAPI.Models.Apartments;
 using AgrlyAPI.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,17 +9,8 @@ namespace AgrlyAPI.Controllers.Media;
 [Route( "api/[controller]" )]
 [ApiController]
 [Authorize]
-public class MediaAssetsController : ControllerBase
+public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 {
-	private readonly Supabase.Client _client;
-
-	public MediaAssetsController( Supabase.Client client )
-	{
-		_client = client;
-	}
-
-
-	
 	[HttpGet( "apartments" )]
 	public async Task<IActionResult> GetOwnerApartmentMedia()
 	{
@@ -32,13 +22,13 @@ public class MediaAssetsController : ControllerBase
 		}
 
 		// Step 2: Fetch all apartments owned by this user
-		var apartmentsResponse = await _client
+		var apartmentsResponse = await client
 			.From<Apartment>()
 			.Filter( "owner_id", Supabase.Postgrest.Constants.Operator.Equals, (int)ownerId )
 			.Get();
 
 		var apartments = apartmentsResponse.Models;
-		if ( apartments == null || apartments.Count == 0 )
+		if ( apartments.Count == 0 )
 		{
 			return Ok( new List<Photos>() ); // No apartments = no media
 		}
@@ -47,7 +37,7 @@ public class MediaAssetsController : ControllerBase
 		var apartmentIds = apartments.Select( a => a.Id ).Cast<object>().ToList();
 
 		// Step 4: Fetch all media files linked to those apartments
-		var filesResponse = await _client
+		var filesResponse = await client
 			.From<Photos>()
 			.Filter( "apartment_id", Supabase.Postgrest.Constants.Operator.In, apartmentIds )
 			.Get();
@@ -58,21 +48,25 @@ public class MediaAssetsController : ControllerBase
 
 
 	[HttpPost( "upload" )]
-	public async Task<IActionResult> UploadMedia( IFormFile file)
+	public async Task<IActionResult> UploadMedia( IFormFile? file)
 	{
 		if ( file == null || file.Length == 0 )
+		{
 			return BadRequest( "No file provided." );
+		}
 
 		var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
 		if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var userId ) )
+		{
 			return Unauthorized( "Invalid or missing user ID." );
+		}
 
 		var fileName = $"{Guid.NewGuid()}_{file.FileName}";
 		var filePath = $"user-{userId}/{fileName}";
 
-		var bucket = _client.Storage.From( "user-media" );
+		var bucket = client.Storage.From( "user-media" );
 
-		// Convert file to byte[]
+		// Convert a file to byte[]
 		byte[ ] fileBytes;
 		await using ( var ms = new MemoryStream() )
 		{
@@ -87,8 +81,10 @@ public class MediaAssetsController : ControllerBase
 			Upsert = true
 		} );
 
-		if ( !result.Any() )
+		if ( result.Length == 0 )
+		{
 			return StatusCode( 500, "Failed to upload file" );
+		}
 
 		var publicUrl = bucket.GetPublicUrl( filePath );
 
@@ -104,11 +100,11 @@ public class MediaAssetsController : ControllerBase
 			UploadedAt = DateTime.UtcNow
 		};
 
-		var insertResponse = await _client
+		var insertResponse = await client
 			.From<Photos>()
 			.Insert( photo );
 
-
-		return Ok( new { url = publicUrl } );
+		// TODO: This return needs to be tested !!!
+		return insertResponse.ResponseMessage is { IsSuccessStatusCode: true } ? Ok( new { url = publicUrl } ) : StatusCode( 500, "Failed to upload file" );
 	}
 }

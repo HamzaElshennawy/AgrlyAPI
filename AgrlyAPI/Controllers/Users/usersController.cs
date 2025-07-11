@@ -8,30 +8,39 @@ namespace AgrlyAPI.Controllers.users
 	[Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
-	public class usersController : ControllerBase
+	public class UsersController : ControllerBase
 	{
 		
 		[AllowAnonymous]
 		[HttpPost("adduser")]
-		public async Task<IActionResult> Post(User newuser, Supabase.Client client)
+		public async Task<IActionResult> Post(User? newuser, Supabase.Client client)
 		{
 			// Input validation
 			if (newuser == null)
+			{
 				return BadRequest("User data is required");
+			}
 
 			// Validate required fields
-			if (string.IsNullOrWhiteSpace(newuser.Username))
-				return BadRequest("Username is required");
+			if (string.IsNullOrWhiteSpace(newuser.Email))
+			{
+				return BadRequest("Email is required");
+			}
+
 			if (string.IsNullOrWhiteSpace(newuser.Password))
+			{
 				return BadRequest("Password is required");
+			}
 
 			// Check for existing username
 			var existingUser = await client
 				.From<User>()
-				.Where(u => u.Username == newuser.Username)
+				.Where(u => u.Email == newuser.Email)
 				.Get();
-			if (existingUser.Models.Any())
-				return Conflict("Username already exists");
+			if (existingUser.Models.Count != 0 )
+			{
+				return Conflict("Email already exists");
+			}
 
 			// Set the creation timestamp
 			newuser.CreatedAt = DateTime.UtcNow; // Use UTC time for consistency
@@ -40,8 +49,8 @@ namespace AgrlyAPI.Controllers.users
 			newuser.Password = PasswordHashHandler.HashPassword(newuser.Password);
 
 			var response = await client.From<User>().Insert(newuser);
-			var newuserId = response.Models.First().Id;
-			return Ok(newuserId);
+			var newUserId = response.Models.First().Id;
+			return Ok(newUserId);
 		}
 
 
@@ -49,8 +58,10 @@ namespace AgrlyAPI.Controllers.users
         public async Task<IActionResult> Get(Supabase.Client client)
         {
             var usersResponse = await client.From<User>().Get();
-            if (usersResponse.Models is null || usersResponse.Models.Count == 0)
-                return BadRequest("No users found");
+            if (usersResponse.Models.Count == 0)
+            {
+	            return BadRequest("No users found");
+            }
 
             var users = usersResponse.Models;
             var userIds = users.Select(u => u.Id).ToArray();
@@ -92,16 +103,20 @@ namespace AgrlyAPI.Controllers.users
 
 
 
-		[HttpDelete("deleteuser/{id}")]
+		[HttpDelete("deleteuser/{id:long}")]
         public async Task<IActionResult> Delete(long id, Supabase.Client client)
         {
             if (id <= 0)
-                return BadRequest("Invalid user ID");
+            {
+	            return BadRequest("Invalid user ID");
+            }
 
             var localCurrentUsername = User.Identity?.Name;
 
             if (string.IsNullOrEmpty(localCurrentUsername))
-                return Unauthorized("User not authenticated");
+            {
+	            return Unauthorized("User not authenticated");
+            }
 
             var userIdClaim = long.Parse(User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
             
@@ -109,11 +124,13 @@ namespace AgrlyAPI.Controllers.users
 			var currentUser = currentUserResponse.Models.FirstOrDefault();
 
 			if ( currentUser == null )
+			{
 				return Unauthorized( "Current user not found" );
+			}
 
 			// Check if user exists
 			var response = await client.From<User>().Where( u => u.Id == id ).Get();
-			if ( !response.Models.Any() )
+			if ( response.Models.Count == 0 )
 			{
 				return NotFound( "User not found" );
 			}

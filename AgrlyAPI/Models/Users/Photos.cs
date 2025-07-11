@@ -16,6 +16,17 @@ public class Photos : BaseModel
 	public string? FilePath { get; set; }
 	[Column("public_url")]
 	public string? PublicUrl { get; set; }
+
+	/**
+	 * <summary>
+	 * can be
+	 * </summary>
+	 * <remarks>
+	 * [profile],
+	 * [national_id],
+	 * [apartment_photo]
+	 * </remarks>
+	*/
 	[Column( "type" )]
 	public string? Type { get; set; }
 	[Column( "uploaded_at" )]
