@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AgrlyAPI.Models.Api;
 
 namespace AgrlyAPI.Controllers.Apartments;
 
@@ -21,6 +22,65 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		return Ok( response.Models );
 	}
 
+	/// <summary>
+	/// Get the avaiable apartments for rent (for Home page)
+	/// </summary>
+	/// <returns></returns>
+	[HttpGet( "getavailable" )]
+	public async Task<IActionResult> GetAvailable(int currentPage = 0)
+	{
+		const int pageSize = 25;
+		if (currentPage < 0)
+		{
+			currentPage = 0;
+		}
+
+		int from = currentPage * pageSize;
+		int to = from + pageSize - 1;
+
+		try
+		{
+			var apartmentsRequest = await client
+				.From<Apartment>()
+				.Select("*")
+				.Order("rating", Supabase.Postgrest.Constants.Ordering.Descending)
+				.Range(from, to)
+				.Get();
+
+			var apartments = apartmentsRequest.Models;
+
+			if (apartments.Count == 0)
+			{
+				var emptyResponse = new AvailableApartmentsResponse
+				{
+					Apartments = new List<Apartment>(),
+					CurrentPage = currentPage,
+					StatusCode = 200
+				};
+
+				return Ok(emptyResponse);
+			}
+			
+			var response = new AvailableApartmentsResponse
+			{
+				Apartments = apartments,
+				CurrentPage = currentPage,
+				StatusCode = 200
+			};
+
+			return Ok(response);
+		}
+		catch (Supabase.Postgrest.Exceptions.PostgrestException ex)
+		{
+			return StatusCode(StatusCodes.Status500InternalServerError, "Server error: " + ex.Message);
+		}
+		catch (Exception ex)
+		{
+			return StatusCode(StatusCodes.Status500InternalServerError, "Unexpected error: " + ex.Message);
+		}
+	}
+
+	
 	// GET: api/apartments/5
 	[HttpGet( "{id:long}" )]
 	public async Task<IActionResult> GetById( long id )
