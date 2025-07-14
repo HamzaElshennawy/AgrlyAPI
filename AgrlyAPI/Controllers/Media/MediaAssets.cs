@@ -1,5 +1,5 @@
 ﻿using AgrlyAPI.Models.Apartments;
-using AgrlyAPI.Models.Users;
+using AgrlyAPI.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,6 +11,15 @@ namespace AgrlyAPI.Controllers.Media;
 [Authorize]
 public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 {
+	
+	/// <summary>
+	/// Retrieves all media files (Photo) associated with the apartments owned by the currently authenticated user.
+	/// </summary>
+	/// <returns>
+	/// An <see cref="IActionResult"/> containing a list of <see cref="FilesApartments"/> if the user has apartments with media,
+	/// an empty list if no apartments exist, or an <see cref="UnauthorizedResult"/> if the user ID is missing or invalid.
+	/// </returns>
+	
 	[HttpGet( "apartments" )]
 	public async Task<IActionResult> GetOwnerApartmentMedia()
 	{
@@ -30,7 +39,7 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 		var apartments = apartmentsResponse.Models;
 		if ( apartments.Count == 0 )
 		{
-			return Ok( new List<Photos>() ); // No apartments = no media
+			return Ok( new List<FilesApartments>() ); // No apartments = no media
 		}
 
 		// Step 3: Collect apartment IDs
@@ -38,18 +47,37 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 
 		// Step 4: Fetch all media files linked to those apartments
 		var filesResponse = await client
-			.From<Photos>()
+			.From<FilesApartments>()
 			.Filter( "apartment_id", Supabase.Postgrest.Constants.Operator.In, apartmentIds )
 			.Get();
 
 		var files = filesResponse.Models;
 		return Ok( files );
 	}
-
-
-	[HttpPost( "upload" )]
-	public async Task<IActionResult> UploadMedia( IFormFile? file)
+	
+	/// <summary>
+	/// Uploads a media file to the storage bucket and stores its metadata in the database, associating it with the authenticated user.
+	/// </summary>
+	/// <param name="file">The media file to upload.</param>
+	/// <param name="apartmentId">The ID of the apartment to associate the media file with.</param>
+	/// <returns>
+	/// An <see cref="IActionResult"/> containing the public URL of the uploaded file on success,
+	/// <see cref="BadRequestResult"/> if the file is missing or empty,
+	/// <see cref="UnauthorizedResult"/> if the user ID is invalid or missing,
+	/// or <see cref="StatusCodeResult"/> (500) if the upload or database insertion fails.
+	/// </returns>
+	
+	[HttpPost( "upload-apartment-photo" )]
+	public async Task<IActionResult> UploadMediaApartment( IFormFile? file, string apartmentId )
 	{
+		try
+		{
+			int.Parse( apartmentId );
+		}
+		catch ( Exception e )
+		{
+			return BadRequest("Apartment ID must be a valid ID.");
+		}
 		if ( file == null || file.Length == 0 )
 		{
 			return BadRequest( "No file provided." );
@@ -62,9 +90,9 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 		}
 
 		var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-		var filePath = $"user-{userId}/{fileName}";
+		var filePath = $"apartment-{apartmentId}/{fileName}";
 
-		var bucket = client.Storage.From( "user-media" );
+		var bucket = client.Storage.From( "apartment-media" );
 
 		// Convert a file to byte[]
 		byte[ ] fileBytes;
@@ -88,20 +116,20 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 
 		var publicUrl = bucket.GetPublicUrl( filePath );
 
-
+		
 		//update the database with the file path and user id
-		var photo = new Photos
+		var photo = new FilesApartments
 		{
 			UserID = userId,
 			FilePath = filePath,
 			PublicUrl = publicUrl,
-			Type = "apartment_photo",
-			ApartmetnID = 1,
-			UploadedAt = DateTime.UtcNow
+			ApartmetnID = long.Parse(apartmentId),
+			UploadedAt = DateTime.Now,
+			UpdatedAt = DateTime.Now
 		};
 
 		var insertResponse = await client
-			.From<Photos>()
+			.From<FilesApartments>()
 			.Insert( photo );
 
 		// TODO: This return needs to be tested !!!

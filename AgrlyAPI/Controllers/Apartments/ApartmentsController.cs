@@ -189,6 +189,6 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			.From<Apartment>()
 			.Delete( apartment );
 
-		return NoContent();
+		return StatusCode( StatusCodes.Status410Gone, "Apartment deleted successfully." );
 	}
 }
