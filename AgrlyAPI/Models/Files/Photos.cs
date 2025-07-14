@@ -31,5 +31,9 @@ public class Photos : BaseModel
 	public string? Type { get; set; }
 	[Column( "uploaded_at" )]
 	public DateTime UploadedAt { get; set; }
+	
+	[Column( "updated_at" )]
+	public DateTime UpdatedAt { get; set; }
+
 }
 
