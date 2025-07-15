@@ -141,7 +141,14 @@ namespace AgrlyAPI.Controllers.users
 				await client.From<Billing>()
 				.Where( b => b.UserId == id )
 				.Delete();
+				var bucket = client.Storage.From( "user-profiles" );
 				
+				await bucket.Remove( $"profiles/{userIdClaim}.jpg" );
+
+				bucket = client.Storage.From( "user-media" );
+
+				await bucket.Remove( $"user-{userIdClaim}" );
+
 				return Ok();
 			}
 			
