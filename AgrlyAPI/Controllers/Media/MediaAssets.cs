@@ -2,6 +2,7 @@
 using AgrlyAPI.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace AgrlyAPI.Controllers.Media;
@@ -9,6 +10,7 @@ namespace AgrlyAPI.Controllers.Media;
 [Route( "api/[controller]" )]
 [ApiController]
 [Authorize]
+[EnableRateLimiting( "fixed" )]
 public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 {
 	

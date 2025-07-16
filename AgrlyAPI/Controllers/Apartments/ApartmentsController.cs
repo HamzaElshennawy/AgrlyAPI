@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AgrlyAPI.Models.Api;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AgrlyAPI.Controllers.Apartments;
 
 [Route( "api/[controller]" )]
 [ApiController]
 [Authorize]
+[EnableRateLimiting( "fixed" )]
 public class ApartmentsController( Supabase.Client client ) : ControllerBase
 {
 	// GET: api/apartments

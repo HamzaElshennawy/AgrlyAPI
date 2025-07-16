@@ -2,12 +2,14 @@
 using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AgrlyAPI.Controllers.users
 {
 	[Route("api/[controller]")]
 	[ApiController]
 	[Authorize]
+	[EnableRateLimiting("fixed")]
 	public class UsersController : ControllerBase
 	{
 		
@@ -60,7 +62,7 @@ namespace AgrlyAPI.Controllers.users
             var usersResponse = await client.From<User>().Get();
             if (usersResponse.Models.Count == 0)
             {
-	            return BadRequest("No users found");
+                return BadRequest("No users found");
             }
 
             var users = usersResponse.Models;
@@ -104,7 +106,7 @@ namespace AgrlyAPI.Controllers.users
 
 
 		[HttpDelete("deleteuser/{id:long}")]
-        public async Task<IActionResult> Delete(long id, Supabase.Client client)
+		public async Task<IActionResult> Delete(long id, Supabase.Client client)
         {
             if (id <= 0)
             {

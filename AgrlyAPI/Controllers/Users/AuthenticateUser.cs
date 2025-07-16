@@ -2,11 +2,13 @@
 using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AgrlyAPI.Controllers.Users;
 
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting("fixed")]
 public class AuthenticateUser( JwtService jwtService ) : ControllerBase
 {
 	[AllowAnonymous]

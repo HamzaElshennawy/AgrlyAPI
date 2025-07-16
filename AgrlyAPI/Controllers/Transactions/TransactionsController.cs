@@ -1,13 +1,15 @@
 using AgrlyAPI.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
-namespace AgrlyAPI.Controllers;
+namespace AgrlyAPI.Controllers.Transactions;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting("fixed")]
 public class TransactionsController( Supabase.Client client ) : ControllerBase
 {
 	[HttpGet]
@@ -59,7 +61,7 @@ public class TransactionsController( Supabase.Client client ) : ControllerBase
         return Ok(transaction);
     }
 
-    [HttpPost]
+    [HttpPost("create-transaction")]
     public async Task<IActionResult> Create([FromBody] Transactions transaction)
     {
         transaction.CreatedAt = DateTime.UtcNow;

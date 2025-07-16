@@ -2,12 +2,13 @@
 #pragma warning disable IDE1006 // Naming Styles
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AgrlyAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
+	[EnableRateLimiting("fixed")]
 	public class docs : ControllerBase
 	{
 		[HttpGet]
