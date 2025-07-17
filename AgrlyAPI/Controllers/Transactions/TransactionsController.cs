@@ -28,7 +28,7 @@ public class TransactionsController( Supabase.Client client ) : ControllerBase
 			return Forbid();
 		}
 		// Fetch all transactions
-		var response = await client.From<Transactions>().Get();
+		var response = await client.From<Models.Users.Transactions>().Get();
         return Ok(response.Models);
     }
 
@@ -49,7 +49,7 @@ public class TransactionsController( Supabase.Client client ) : ControllerBase
         }
 
 		var response = await client
-			.From<Transactions>()
+			.From<Models.Users.Transactions>()
 			.Where( t => t.Id == id ).Where(t=>t.senderID == userId || t.receiverID == userId).Get();
 
         var transaction = response.Models.FirstOrDefault();
@@ -62,10 +62,10 @@ public class TransactionsController( Supabase.Client client ) : ControllerBase
     }
 
     [HttpPost("create-transaction")]
-    public async Task<IActionResult> Create([FromBody] Transactions transaction)
+    public async Task<IActionResult> Create([FromBody] Models.Users.Transactions transaction)
     {
         transaction.CreatedAt = DateTime.UtcNow;
-        var response = await client.From<Transactions>().Insert(transaction);
+        var response = await client.From<Models.Users.Transactions>().Insert(transaction);
         return Ok(response.Models.FirstOrDefault());
     }
 }

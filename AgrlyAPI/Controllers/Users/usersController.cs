@@ -69,7 +69,7 @@ namespace AgrlyAPI.Controllers.users
             var userIds = users.Select(u => u.Id).ToArray();
 
             var transactionsResponse = await client
-                .From<Transactions>()
+                .From<Models.Users.Transactions>()
                 .Filter("senderid", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
                 .Filter("receiverid", Supabase.Postgrest.Constants.Operator.In, userIds.ToList())
                 .Get();
@@ -94,8 +94,8 @@ namespace AgrlyAPI.Controllers.users
                 IsAdmin = user.IsAdmin,
                 NationalID = user.NationalID,
                 Phone = user.Phone,
-                SentTransactions = transactions.Where(t => t.senderID == user.Id).Cast<Transactions?>().ToList(),
-                ReceivedTransactions = transactions.Where(t => t.receiverID == user.Id).Cast<Transactions?>().ToList(),
+                SentTransactions = transactions.Where(t => t.senderID == user.Id).Cast<Models.Users.Transactions?>().ToList(),
+                ReceivedTransactions = transactions.Where(t => t.receiverID == user.Id).Cast<Models.Users.Transactions?>().ToList(),
                 Billing = billings.Where(b => b.UserId == user.Id).Cast<Billing?>().ToList()
             }).ToList();
 

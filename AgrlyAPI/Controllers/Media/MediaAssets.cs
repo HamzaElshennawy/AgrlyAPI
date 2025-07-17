@@ -74,9 +74,9 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 	{
 		try
 		{
-			int.Parse( apartmentId );
+			var _ = int.Parse( apartmentId );
 		}
-		catch ( Exception e )
+		catch (Exception)
 		{
 			return BadRequest("Apartment ID must be a valid ID.");
 		}
@@ -326,6 +326,5 @@ public class MediaAssetsController( Supabase.Client client ) : ControllerBase
 		{
 			return StatusCode( 500, "Failed to upload file" );
 		}
-		return Ok();
 	}
 }

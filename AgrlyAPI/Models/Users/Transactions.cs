@@ -1,8 +1,7 @@
 ﻿using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
-using System;
 
-namespace AgrlyAPI.Models.User;
+namespace AgrlyAPI.Models.Users;
 
 [Table( "transactions" )]
 public class Transactions : BaseModel

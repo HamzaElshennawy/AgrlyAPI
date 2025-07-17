@@ -7,17 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace AgrlyAPI.Services;
 
-public class JwtService
+public class JwtService( IConfiguration configuration, Supabase.Client client )
 {
-	private readonly IConfiguration _configuration;
-	private readonly Supabase.Client client;
-
-	public JwtService( IConfiguration configuration, Supabase.Client client )
-	{
-		_configuration = configuration;
-		this.client = client;
-	}
-
 	public async Task<LoginResponseModel?> Authenticate( LoginRequestModel request )
 	{
 		if ( string.IsNullOrEmpty( request.Username ) || string.IsNullOrEmpty( request.Password ) )
@@ -28,13 +19,13 @@ public class JwtService
 			.Where( u => u.Username == request.Username )
 			.Get();
 		var user = userAccount.Models.FirstOrDefault();
-		if ( user is null || !PasswordHashHandler.VerifyPassword( request.Password, user.Password ) )
+		if ( user is null || !PasswordHashHandler.VerifyPassword( request.Password, user.Password! ) )
 			return null;
 
-		var issuer = _configuration["JwtConfig:Issuer"];
-		var audience = _configuration["JwtConfig:Audience"];
-		var key = _configuration["JwtConfig:Key"];
-		var tokenValidityMins = _configuration.GetValue<int>( "JwtConfig:TokenValidityMins" );
+		var issuer = configuration["JwtConfig:Issuer"];
+		var audience = configuration["JwtConfig:Audience"];
+		var key = configuration["JwtConfig:Key"];
+		var tokenValidityMins = configuration.GetValue<int>( "JwtConfig:TokenValidityMins" );
 		var tokenExpiryTimeStamp = DateTime.Now.AddMinutes( tokenValidityMins );
 
 		var tokenDescriptor = new SecurityTokenDescriptor

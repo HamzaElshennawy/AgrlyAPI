@@ -10,5 +10,5 @@ public class Tag : BaseModel
 	public long Id { get; set; }
 
 	[Column( "name" )]
-	public string Name { get; set; }
+	public string? Name { get; set; }
 }

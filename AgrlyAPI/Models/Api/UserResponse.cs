@@ -1,4 +1,5 @@
 ﻿using AgrlyAPI.Models.User;
+using AgrlyAPI.Models.Users;
 
 public class UserResponse
 {
