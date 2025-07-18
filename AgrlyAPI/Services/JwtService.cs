@@ -2,7 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using AgrlyAPI.Models.Api;
-using AgrlyAPI.Models.User;
+using AgrlyAPI.Models.Users;
 using Microsoft.IdentityModel.Tokens;
 
 namespace AgrlyAPI.Services;

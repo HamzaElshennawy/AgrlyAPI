@@ -1,6 +1,8 @@
-﻿using AgrlyAPI.Models.User;
+﻿using AgrlyAPI.Models.Users;
 using AgrlyAPI.Models.Users;
 
+
+namespace AgrlyAPI.Models.Api;
 public class UserResponse
 {
 	public long Id { get; set; }

@@ -1,4 +1,5 @@
-﻿using AgrlyAPI.Models.User;
+﻿using AgrlyAPI.Models.Api;
+using AgrlyAPI.Models.Users;
 using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

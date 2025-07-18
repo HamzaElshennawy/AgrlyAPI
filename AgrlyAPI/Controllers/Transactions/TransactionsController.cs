@@ -1,8 +1,10 @@
-using AgrlyAPI.Models.User;
+using AgrlyAPI.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using Supabase.Postgrest;
+using Supabase.Postgrest.Interfaces;
 
 namespace AgrlyAPI.Controllers.Transactions;
 
@@ -67,5 +69,46 @@ public class TransactionsController( Supabase.Client client ) : ControllerBase
         transaction.CreatedAt = DateTime.UtcNow;
         var response = await client.From<Models.Users.Transactions>().Insert(transaction);
         return Ok(response.Models.FirstOrDefault());
+    }
+
+    [HttpDelete( "delete-transaction/{id:long}" )]
+    public async Task<IActionResult> Delete( long id )
+    {
+	    if ( id <= 0 )
+	    {
+		    return BadRequest("Invalid transaction ID");
+	    }
+	    var response = await client.From<Models.Users.Transactions>().Where(t => t.Id == id).Get();
+	    if( response.Models.Count == 0)
+	    {
+		    return NotFound("Transaction not found");
+	    }
+	    await client.From<Models.Users.Transactions>().Where(t => t.Id == id).Delete( );
+	    return Ok();
+    }
+
+    [HttpGet( "user-transactions" )]
+    public async Task<IActionResult> GetUserTransactions()
+    {
+	    var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
+	    if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var userId ) )
+	    {
+		    return Unauthorized();
+	    }
+	    var filters = new List<IPostgrestQueryFilter>
+	    {
+			new QueryFilter( "senderid", Supabase.Postgrest.Constants.Operator.Equals, userId ),
+		    new QueryFilter( "receiverid", Supabase.Postgrest.Constants.Operator.Equals, userId ),
+	    };
+	    
+	    var response = await client
+		    .From<Models.Users.Transactions>()
+		    .Or( filters )
+		    .Get();
+	    if ( response.Models.Count == 0 )
+	    {
+		    return NotFound();
+	    }
+	    return Ok(response.Models.ToArray());
     }
 }

@@ -1,6 +1,9 @@
 ﻿using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
+
+
+namespace AgrlyAPI.Models.Users;
 [Table( "billing" )]
 public class Billing : BaseModel
 {

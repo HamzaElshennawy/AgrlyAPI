@@ -21,8 +21,6 @@ public class Transactions : BaseModel
 	public string? Status { get; set; }
 	[Column( "method" )]
 	public string? Method { get; set; }
-	[Column( "billingID" )]
-	public long? BillingID { get; set; }
 	[Column( "createdAt" )]
 	public DateTime CreatedAt { get; set; }
 }

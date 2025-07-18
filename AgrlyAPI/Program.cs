@@ -1,4 +1,4 @@
-using AgrlyAPI.Models.User;
+using AgrlyAPI.Models.Users;
 using AgrlyAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;

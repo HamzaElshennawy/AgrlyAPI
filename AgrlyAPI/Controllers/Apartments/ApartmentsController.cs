@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AgrlyAPI.Models.Api;
 using Microsoft.AspNetCore.RateLimiting;
+using Supabase.Postgrest.Interfaces;
 
 namespace AgrlyAPI.Controllers.Apartments;
 
@@ -193,4 +194,55 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 		return StatusCode( StatusCodes.Status410Gone, "Apartment deleted successfully." );
 	}
+
+
+	// TODO: This needs more testing
+	[HttpGet( "search" )]
+	public async Task<IActionResult> Search( string query, int currentPage = 0 )
+	{
+		const int pageSize = 25;
+		if ( currentPage < 0 )
+		{
+			currentPage = 0;
+		}
+		int from = currentPage * pageSize;
+		int to = from + pageSize - 1;
+		try
+		{
+			var filters = new List<IPostgrestQueryFilter>
+			{
+				new Supabase.Postgrest.QueryFilter( "title", Supabase.Postgrest.Constants.Operator.ILike, $"%{query}%" ),
+				new Supabase.Postgrest.QueryFilter( "description", Supabase.Postgrest.Constants.Operator.ILike, $"%{query}%" )
+			};
+			var apartmentsRequest = await client
+				.From<Apartment>()
+				.Select( "*" )
+				.Or(filters)
+				.Range( from, to )
+				.Get();
+			var apartments = apartmentsRequest.Models;
+			if ( apartments.Count == 0 )
+			{
+				var emptyResponse = new AvailableApartmentsResponse
+				{
+					Apartments = new List<Apartment>(),
+					CurrentPage = currentPage,
+					StatusCode = 200
+				};
+				return Ok( emptyResponse );
+			}
+			var response = new AvailableApartmentsResponse
+			{
+				Apartments = apartments,
+				CurrentPage = currentPage,
+				StatusCode = 200
+			};
+			return Ok( response );
+		}
+		catch ( Exception _ )
+		{
+			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {_.Message}" );
+		}
+	}
+
 }
