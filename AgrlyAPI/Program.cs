@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using System.Threading.RateLimiting;
+using TickerQ.Dashboard.DependencyInjection;
+using TickerQ.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder( args );
 
@@ -13,7 +15,7 @@ var builder = WebApplication.CreateBuilder( args );
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen();
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddOpenApi();
 builder.Services.AddRateLimiter( options =>
@@ -61,6 +63,12 @@ builder.Services.AddAuthentication( options =>
 	};
 } );
 
+builder.Services.AddTickerQ( options =>
+{
+	options.AddDashboard( basePath: "/tickerq" );
+	options.AddDashboardBasicAuth();
+} );
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<JwtService>();
@@ -68,20 +76,22 @@ builder.Services.AddScoped<JwtService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if ( app.Environment.IsDevelopment() )
-{
+//if ( app.Environment.IsDevelopment() )
+//{
 	// redirect to swagger in development mode only.
 	// TODO: implement the base url while in production mode to handle the request of the base url.
-	app.MapGet( "/", () => Results.Redirect( "http://localhost:5258/scalar" ) );
-	app.MapOpenApi();
-	//app.UseSwagger();
-	//app.UseSwaggerUI();
+	//app.MapGet( "/", () => Results.Redirect( "http://localhost:5258/scalar" ) );
+	//app.MapOpenApi();
+	app.UseSwagger();
+	app.UseSwaggerUI();
 	app.MapScalarApiReference( options =>
 	{
 		options.WithTheme( ScalarTheme.BluePlanet )
 			.WithDefaultHttpClient( ScalarTarget.CSharp, ScalarClient.Http );
 	} );
-}
+//app.UseSwagger();
+//app.UseSwaggerUI();
+//}
 
 
 
@@ -91,5 +101,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseDeveloperExceptionPage();
+//app.UseTickerQ();
 
 app.Run();

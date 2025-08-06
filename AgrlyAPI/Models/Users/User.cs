@@ -34,4 +34,24 @@ public class User : BaseModel
 	public string? NationalID { get; set; }
 	[Column( "phone" )]
 	public string? Phone { get; set; }
+	[Column( "profile_picture_url" )]
+	public string? ProfilePictureUrl { get; set; }
+	[Column( "bio" )]
+	public string? Bio { get; set; }
+	[Column( "date_of_birth" )]
+	public DateTime? DateOfBirth { get; set; }
+	[Column( "government_id_verified")]
+	public bool GovernmentIdVerified { get; set; }
+	[Column( "email_verified" )]
+	public bool EmailVerified { get; set; }
+	[Column( "phone_verified" )]
+	public bool PhoneVerified { get; set; }
+	[Column( "host_since" )]
+	public DateTime? HostSince { get; set; }
+	[Column( "is_superhost" )]
+	public bool IsSuperhost { get; set; }
+	[Column( "preferred_language" )]
+	public string? PreferredLanguage { get; set; }
+	[Column( "timezone" )]
+	public string? Timezone { get; set; }
 }

@@ -104,7 +104,26 @@ namespace AgrlyAPI.Controllers.users
         }
 
 
-
+		[HttpGet("getuser/{id:long}")]
+		public async Task<IActionResult> Get(long id, Supabase.Client client)
+		{
+			if (id <= 0)
+			{
+				return BadRequest("Invalid user ID");
+			}
+			var userIdClaim = long.Parse(User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+			if( userIdClaim == id )
+			{
+				var currentUserResponse = await client.From<User>().Where( u => u.Id == userIdClaim).Get();
+				var currentUser = currentUserResponse.Models.FirstOrDefault();
+				if (currentUser == null)
+				{
+					return Unauthorized("Current user not found");
+				}
+				return Ok(currentUser);
+			}
+			return Unauthorized("You can only access your own user data");
+		}
 
 		[HttpDelete("deleteuser/{id:long}")]
 		public async Task<IActionResult> Delete(long id, Supabase.Client client)

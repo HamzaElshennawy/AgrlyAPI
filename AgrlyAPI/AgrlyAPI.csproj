@@ -10,11 +10,15 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.6.3" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.6.5" />
     <PackageReference Include="supabase" Version="1.1.1" />
+    <PackageReference Include="TickerQ" Version="2.3.0" />
+    <PackageReference Include="TickerQ.Dashboard" Version="2.3.0" />
     <!--<PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.7" />-->
-    <!--<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />-->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+	  
   </ItemGroup>
 </Project>

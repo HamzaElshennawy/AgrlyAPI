@@ -1,11 +1,11 @@
 ﻿using AgrlyAPI.Models.Files;
 using AgrlyAPI.Models.Users;
-using AgrlyAPI.Models.Users;
+using Microsoft.EntityFrameworkCore;
 using System;
 
 
 namespace AgrlyAPI.Services;
-public class DBService
+public class DBService : DbContext
 {
     private readonly Supabase.Client _client;
 

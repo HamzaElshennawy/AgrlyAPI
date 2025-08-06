@@ -11,8 +11,9 @@ namespace AgrlyAPI.Controllers
 	[EnableRateLimiting("fixed")]
 	public class docs : ControllerBase
 	{
+		private readonly string _baseURL = "http://agrly.runasp.net";
 		[HttpGet]
-		public IActionResult Get() => Redirect( "http://localhost:5258/swagger" );
+		public IActionResult Get() => Redirect( $"{_baseURL}/swagger" );
 		
 	}
 }
