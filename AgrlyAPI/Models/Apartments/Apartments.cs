@@ -1,6 +1,7 @@
-﻿using System.Text.Json.Nodes;
-using Supabase.Postgrest.Attributes;
+﻿using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace AgrlyAPI.Models.Apartments;
 
@@ -87,4 +88,7 @@ public class Apartment : BaseModel
 	
 	[Column( "updated_at" )]
 	public DateTime UpdatedAt { get; set; }
+	[Column( "apartment_tags" )]
+	[JsonPropertyName( "apartment_tags" )]
+	public List<string>? ApartmentTags { get; set; }
 }

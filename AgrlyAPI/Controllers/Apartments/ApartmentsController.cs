@@ -1,10 +1,13 @@
 ﻿using AgrlyAPI.Models.Apartments;
+using AgrlyAPI.Models.Api;
+using AgrlyAPI.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using AgrlyAPI.Models.Api;
 using Microsoft.AspNetCore.RateLimiting;
 using Supabase.Postgrest.Interfaces;
+using System.Linq;
+using System.Security.Claims;
+using static Supabase.Postgrest.Constants;
 
 namespace AgrlyAPI.Controllers.Apartments;
 
@@ -30,10 +33,10 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 	/// </summary>
 	/// <returns></returns>
 	[HttpGet( "getavailable" )]
-	public async Task<IActionResult> GetAvailable(int currentPage = 0)
+	public async Task<IActionResult> GetAvailable( int currentPage = 0 )
 	{
 		const int pageSize = 25;
-		if (currentPage < 0)
+		if ( currentPage < 0 )
 		{
 			currentPage = 0;
 		}
@@ -43,47 +46,105 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 		try
 		{
-			var apartmentsRequest = await client
-				.From<Apartment>()
-				.Select("*")
-				.Order("rating", Supabase.Postgrest.Constants.Ordering.Descending)
-				.Range(from, to)
+			var apartmentsResponse = await client
+		.From<Apartment>()
+		.Select( "*" )
+		.Order( "rating", Supabase.Postgrest.Constants.Ordering.Descending )
+		.Range( from, to )
+		.Get();
+
+			var apartments = apartmentsResponse.Models;
+
+			// Step 2: Fetch apartment_tags
+			var apartmentTagsResponse = await client
+				.From<ApartmentTags>()
+				.Select( "*" )
 				.Get();
 
-			var apartments = apartmentsRequest.Models;
+			var apartmentTags = apartmentTagsResponse.Models;
 
-			if (apartments.Count == 0)
+			// Step 3: Fetch all tags
+			var tagsResponse = await client
+				.From<Tag>()
+				.Select( "*" )
+				.Get();
+
+			var tags = tagsResponse.Models;
+
+			// Step 4: Create lookup dictionary for tagId -> tagName
+			var tagDict = tags.ToDictionary( t => t.Id, t => t.Name );
+
+			// Step 5: Map tags to apartments
+			foreach ( var apartment in apartments )
 			{
-				var emptyResponse = new AvailableApartmentsResponse
-				{
-					Apartments = new List<Apartment>(),
-					CurrentPage = currentPage,
-					StatusCode = 200
-				};
+				var tagIds = apartmentTags
+					.Where( at => at.ApartmentId == apartment.Id )
+					.Select( at => at.TagId )
+					.ToList();
 
-				return Ok(emptyResponse);
+				apartment.ApartmentTags = tagIds
+					.Where( tagDict.ContainsKey )
+					.Select( tagId => tagDict[tagId] )
+					.ToList()!;
 			}
-			
 			var response = new AvailableApartmentsResponse
 			{
 				Apartments = apartments,
 				CurrentPage = currentPage,
 				StatusCode = 200
 			};
-
 			return Ok(response);
 		}
-		catch (Supabase.Postgrest.Exceptions.PostgrestException ex)
+		catch ( Supabase.Postgrest.Exceptions.PostgrestException ex )
 		{
-			return StatusCode(StatusCodes.Status500InternalServerError, "Server error: " + ex.Message);
+			return StatusCode( StatusCodes.Status500InternalServerError, "Server error: " + ex.Message );
 		}
-		catch (Exception ex)
+		catch ( Exception ex )
 		{
-			return StatusCode(StatusCodes.Status500InternalServerError, "Unexpected error: " + ex.Message);
+			return StatusCode( StatusCodes.Status500InternalServerError, "Unexpected error: " + ex.Message );
 		}
 	}
+	[HttpGet("gethistory/{userid}")]
+	public async Task<IActionResult> GetRentHistory( string userId )
+	{
+		try
+		{
+			//var id = long.Parse( userId );
+			//var user = await client.From<User>().Where( u => u.Id == id ).Get();
+			//if ( user.Models.Count() > 0 )
+			//{
+			//	return NotFound();
+			//}
 
-	
+			var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
+			if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var ownerId ) )
+			{
+				return Unauthorized( "Invalid or missing user ID." );
+			}
+
+			// Step 1: Fetch rents for the user
+			var rentResponse = await client
+				.From<RentHistory>()
+				.Select( "*, apartment:apartment_id(*)" )
+				.Filter( "user_id", Supabase.Postgrest.Constants.Operator.Equals, userId )
+				.Order( "start_date", Supabase.Postgrest.Constants.Ordering.Descending )
+				.Get();
+
+			var rents = rentResponse.Models;
+
+			var response = new RentHistoryResponse
+			{
+				UserId = userId,
+				History = rents
+			};
+
+			return Ok( response );
+		}
+		catch ( Exception ex )
+		{
+			return StatusCode( 500, $"Server error: {ex.Message}" );
+		}
+	}
 	// GET: api/apartments/5
 	[HttpGet( "{id:long}" )]
 	public async Task<IActionResult> GetById( long id )
@@ -217,7 +278,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			var apartmentsRequest = await client
 				.From<Apartment>()
 				.Select( "*" )
-				.Or(filters)
+				.Or( filters )
 				.Range( from, to )
 				.Get();
 			var apartments = apartmentsRequest.Models;
