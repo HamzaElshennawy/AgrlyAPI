@@ -109,13 +109,6 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 	{
 		try
 		{
-			//var id = long.Parse( userId );
-			//var user = await client.From<User>().Where( u => u.Id == id ).Get();
-			//if ( user.Models.Count() > 0 )
-			//{
-			//	return NotFound();
-			//}
-
 			var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
 			if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var ownerId ) )
 			{
@@ -153,14 +146,26 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			.From<Apartment>()
 			.Where( a => a.Id == id )
 			.Get();
-
 		var apartment = response.Models.FirstOrDefault();
+		// fetch the reviews for the apartment
+		var reviewsResponse = await client
+			.From<Reviews>()
+			.Where( r => r.ApartmentId == id )
+			.Get();
+
+
 		if ( apartment == null )
 		{
 			return NotFound();
 		}
+		var reviews = reviewsResponse.Models;
+		var apartmentByIdResponse = new ApartmentByIdResponse
+		{
+			Apartment = apartment,
+			Reviews = reviews
+		};
 
-		return Ok( apartment );
+		return Ok( apartmentByIdResponse );
 	}
 
 	// GET: api/apartments/owned
