@@ -1,4 +1,6 @@
-﻿# Agrly API Documentation
+﻿![Agrly Logo](assets/images/logo_orange.png)
+
+# Agrly API Documentation
 
 This is the documentation for the Agrly API, a .NET 9.0 Web API project using JWT authentication and Supabase as the database.
 
@@ -7,10 +9,11 @@ This is the documentation for the Agrly API, a .NET 9.0 Web API project using JW
 * [Getting Started](#getting-started)
 * [Authentication](#authentication)
 * [API Endpoints](#api-endpoints)
-
   * [User Management](#user-management)
   * [Transactions](#transactions)
   * [Media Assets](#media-assets)
+  * [Apartments](#apartments)
+  * [Reviews](#reviews)
 * [Error Handling](#error-handling)
 * [Development Setup](#development-setup)
 * [Database Schema](#database-schema)
@@ -253,6 +256,137 @@ Response:
 
 ---
 
+### Apartments
+
+#### Get All Apartments
+
+**GET** `/api/apartments`
+
+#### Get Available Apartments (Paginated)
+
+**GET** `/api/apartments/getavailable?currentPage={page}`
+
+#### Get Apartment by ID (with Reviews)
+
+**GET** `/api/apartments/{id}`
+
+#### Get Owned Apartments
+
+**GET** `/api/apartments/owned`
+
+#### Create Apartment
+
+**POST** `/api/apartments`
+
+#### Update Apartment
+
+**PUT** `/api/apartments/{id}`
+
+#### Delete Apartment
+
+**DELETE** `/api/apartments/{id}`
+
+#### Search Apartments
+
+**GET** `/api/apartments/search?query={query}&currentPage={page}`
+
+#### Get Apartments by Location
+
+**GET** `/api/apartments/get_property_by_location/{location}`
+
+#### Get Apartments by Category
+
+**POST** `/api/apartments/get_property_by_gategory/`
+
+#### Get Categories
+
+**GET** `/api/apartments/categories`
+
+#### Add Category
+
+**POST** `/api/apartments/categories/add`
+
+#### Update Category
+
+**PUT** `/api/apartments/categories/update`
+
+#### Get Rent History
+
+**GET** `/api/apartments/gethistory/{userid}`
+
+#### Book Apartment
+
+**POST** `/api/apartments/{apartmentId}/book`
+
+#### Add Review to Apartment
+
+**POST** `/api/apartments/{apartmentId}/review`
+
+---
+
+### Reviews
+
+#### Reviews Model
+
+The `Reviews` model supports apartment reviews with multiple rating fields, comments, and host responses.
+
+| Field                | Type      | Description                  |
+|----------------------|-----------|------------------------------|
+| id                   | bigint    | Primary key                  |
+| booking_id           | bigint    | Related booking              |
+| reviewer_id          | bigint    | User who wrote the review    |
+| apartment_id         | bigint    | Apartment being reviewed     |
+| host_id              | bigint    | Host user                    |
+| overall_rating       | int       | Overall rating               |
+| cleanliness_rating   | int       | Cleanliness rating           |
+| communication_rating | int       | Communication rating         |
+| check_in_rating      | int       | Check-in rating              |
+| accuracy_rating      | int       | Accuracy rating              |
+| location_rating      | int       | Location rating              |
+| value_rating         | int       | Value rating                 |
+| title                | string    | Review title                 |
+| comment              | string    | Review comment               |
+| review_type          | string    | Type of review               |
+| host_response        | string    | Host's response              |
+| host_response_date   | datetime  | Date of host response        |
+| created_at           | datetime  | Created timestamp            |
+| updated_at           | datetime  | Updated timestamp            |
+
+#### Get Reviews for Apartment
+
+**GET** `/api/apartments/{id}`
+
+Returns apartment details and associated reviews.
+
+#### Add Review to Apartment
+
+**POST** `/api/apartments/{apartmentId}/review`
+
+Request:
+
+```json
+{
+  "bookingId": 1,
+  "reviewerId": 2,
+  "apartmentId": 3,
+  "hostId": 4,
+  "overallRating": 5,
+  "cleanlinessRating": 5,
+  "communicationRating": 5,
+  "checkInRating": 5,
+  "accuracyRating": 5,
+  "locationRating": 5,
+  "valueRating": 5,
+  "title": "Great stay!",
+  "comment": "Everything was perfect.",
+  "reviewType": "guest",
+  "hostResponse": null,
+  "hostResponseDate": null
+}
+```
+
+---
+
 ## Error Handling
 
 | Status Code | Description                        |
@@ -336,6 +470,32 @@ CREATE TABLE files (
 );
 ```
 
+### Reviews Table
+
+```sql
+CREATE TABLE reviews (
+  id BIGINT PRIMARY KEY,
+  booking_id BIGINT,
+  reviewer_id BIGINT,
+  apartment_id BIGINT,
+  host_id BIGINT,
+  overall_rating INTEGER,
+  cleanliness_rating INTEGER,
+  communication_rating INTEGER,
+  check_in_rating INTEGER,
+  accuracy_rating INTEGER,
+  location_rating INTEGER,
+  value_rating INTEGER,
+  title VARCHAR,
+  comment TEXT,
+  review_type VARCHAR,
+  host_response TEXT,
+  host_response_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+```
+
 ---
 
 ## Security Features
@@ -347,6 +507,7 @@ CREATE TABLE files (
 * Protection against common vulnerabilities
 * Role-based access control (admin/user)
 * User-specific operation validation
+* Rate limiting on sensitive endpoints
 
 ---
 
@@ -360,14 +521,22 @@ AgrlyAPI/
 │   ├── Users/
 │   │   ├── AuthenticateUser.cs
 │   │   └── usersController.cs
-│   ├── TransactionsController.cs
+│   ├── Transactions/
+│   │   └── TransactionsController.cs
+│   ├── Apartments/
+│   │   └── ApartmentsController.cs
 │   └── docs.cs
 ├── Models/
 │   ├── Api/
 │   │   ├── LoginRequestModel.cs
 │   │   └── LoginResponseModel.cs
+│   │   ├── ApartmentByIdResponse.cs
+│   │   └── RentHistoryResponse.cs
 │   ├── Apartments/
-│   │   └── Apartment.cs
+│   │   ├── Apartment.cs
+│   │   ├── Booking.cs
+│   │   ├── RentHistory.cs
+│   │   ├── Reviews.cs
 │   ├── User/
 │   │   ├── User.cs
 │   │   ├── Billing.cs
@@ -385,6 +554,8 @@ AgrlyAPI/
 
 ## TODO:
 - Add Google Login and Signup
+- Implement review creation endpoint logic
+- Add more validation and error handling for booking and review endpoints
 
 ---
 ## License
