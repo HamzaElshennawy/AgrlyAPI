@@ -125,6 +125,36 @@ namespace AgrlyAPI.Controllers.users
 			return Unauthorized("You can only access your own user data");
 		}
 
+		[HttpPost("updateuser")]
+		public async Task<IActionResult> Update(User? updatedUser, Supabase.Client client)
+		{
+			if (updatedUser == null)
+			{
+				return BadRequest("Invalid user data");
+			}
+			var localCurrentUsername = User.Identity?.Name;
+			if (string.IsNullOrEmpty(localCurrentUsername))
+			{
+				return Unauthorized("User not authenticated");
+			}
+			var userIdClaim = long.Parse(User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+			
+			var currentUserResponse = await client.From<User>().Where( u => u.Id == userIdClaim).Get();
+			var currentUser = currentUserResponse.Models.FirstOrDefault();
+			if (currentUser == null)
+			{
+				return Unauthorized("Current user not found");
+			}
+			if (currentUser.IsAdmin || updatedUser.Id == userIdClaim)
+			{
+				// Update the user
+				await client.From<User>().Where(u => u.Id == updatedUser.Id ).Update(updatedUser);
+				return Ok("Updated");
+			}
+			return Forbid("You are not authorized to update this user");
+		}
+
+
 		[HttpDelete("deleteuser/{id:long}")]
 		public async Task<IActionResult> Delete(long id, Supabase.Client client)
         {
@@ -157,7 +187,7 @@ namespace AgrlyAPI.Controllers.users
 				return NotFound( "User not found" );
 			}
 			// Check if the current user is an admin
-			if ( currentUser.IsAdmin )
+			if ( currentUser.IsAdmin || currentUser.Id == id)
 			{
 				await client.From<User>().Where( u => u.Id == id ).Delete();
 				await client.From<Billing>()
@@ -171,7 +201,7 @@ namespace AgrlyAPI.Controllers.users
 
 				await bucket.Remove( $"user-{userIdClaim}" );
 
-				return Ok();
+				return Ok("Deleted");
 			}
 			
 
@@ -184,7 +214,7 @@ namespace AgrlyAPI.Controllers.users
 			}
 
 			await client.From<User>().Where(u => u.Id == id).Delete();
-			return Ok();
+			return Ok("Deleted");
         }
 	}
 }

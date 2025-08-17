@@ -11,10 +11,10 @@ namespace AgrlyAPI.Models.Apartments
 		public int Id { get; set; }
 
 		[Column( "user_id" )]
-		public string UserId { get; set; }
+		public long UserId { get; set; }
 
 		[Column( "apartment_id" )]
-		public string ApartmentId { get; set; }
+		public long ApartmentId { get; set; }
 
 		[Column( "start_date" )]
 		public DateTime StartDate { get; set; }
@@ -24,7 +24,10 @@ namespace AgrlyAPI.Models.Apartments
 		[Column("status")]
 		public string? Status { get; set; }
 
-		[Column( "apartment" )]
-		public Apartment Apartment { get; set; }
+		
+		[Column("created_at")]
+		public DateTime CreatedAt { get; set; }
+		[Column("updated_at")]
+		public DateTime UpdatedAt { get; set; }
 	}
 }

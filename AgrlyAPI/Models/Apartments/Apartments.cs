@@ -92,3 +92,8 @@ public class Apartment : BaseModel
 	[JsonPropertyName( "apartment_tags" )]
 	public List<string>? ApartmentTags { get; set; }
 }
+
+public class ApartmentCategories : Apartment
+{
+	public List<Category> Categories { get; set; } = new List<Category>();
+}

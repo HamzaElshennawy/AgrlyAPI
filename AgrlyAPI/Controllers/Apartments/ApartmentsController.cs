@@ -1,12 +1,11 @@
 ﻿using AgrlyAPI.Models.Apartments;
 using AgrlyAPI.Models.Api;
-using AgrlyAPI.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Supabase.Postgrest.Interfaces;
-using System.Linq;
 using System.Security.Claims;
+using Newtonsoft.Json;
 using static Supabase.Postgrest.Constants;
 
 namespace AgrlyAPI.Controllers.Apartments;
@@ -19,6 +18,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 {
 	// GET: api/apartments
 	[HttpGet]
+	[AllowAnonymous]
 	public async Task<IActionResult> GetAll()
 	{
 		var response = await client
@@ -33,6 +33,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 	/// </summary>
 	/// <returns></returns>
 	[HttpGet( "getavailable" )]
+	[AllowAnonymous]
 	public async Task<IActionResult> GetAvailable( int currentPage = 0 )
 	{
 		const int pageSize = 25;
@@ -49,7 +50,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			var apartmentsResponse = await client
 		.From<Apartment>()
 		.Select( "*" )
-		.Order( "rating", Supabase.Postgrest.Constants.Ordering.Descending )
+		.Order( "rating", Ordering.Descending )
 		.Range( from, to )
 		.Get();
 
@@ -93,7 +94,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 				CurrentPage = currentPage,
 				StatusCode = 200
 			};
-			return Ok(response);
+			return Ok( response );
 		}
 		catch ( Supabase.Postgrest.Exceptions.PostgrestException ex )
 		{
@@ -104,13 +105,14 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			return StatusCode( StatusCodes.Status500InternalServerError, "Unexpected error: " + ex.Message );
 		}
 	}
-	[HttpGet("gethistory/{userid}")]
+	
+	[HttpGet( "gethistory/{userid}" )]
 	public async Task<IActionResult> GetRentHistory( string userId )
 	{
 		try
 		{
 			var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
-			if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var ownerId ) )
+			if ( userIdClaim == null )
 			{
 				return Unauthorized( "Invalid or missing user ID." );
 			}
@@ -119,8 +121,8 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			var rentResponse = await client
 				.From<RentHistory>()
 				.Select( "*, apartment:apartment_id(*)" )
-				.Filter( "user_id", Supabase.Postgrest.Constants.Operator.Equals, userId )
-				.Order( "start_date", Supabase.Postgrest.Constants.Ordering.Descending )
+				.Filter( "user_id", Operator.Equals, userId )
+				.Order( "start_date", Ordering.Descending )
 				.Get();
 
 			var rents = rentResponse.Models;
@@ -180,7 +182,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 		var response = await client
 			.From<Apartment>()
-			.Filter( "owner_id", Supabase.Postgrest.Constants.Operator.Equals, ownerId )
+			.Filter( "owner_id",Operator.Equals, ownerId )
 			.Get();
 
 		return Ok( response.Models );
@@ -206,6 +208,130 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		return Ok( result.Models.FirstOrDefault() );
 	}
 
+	[AllowAnonymous]
+	[HttpGet("get_property_by_location/{location}")]
+	public async Task<IActionResult> GetPropertyByLocation( string location )
+	{
+		if ( string.IsNullOrWhiteSpace( location ) )
+		{
+			return BadRequest( "Location cannot be empty." );
+		}
+		try
+		{
+			var response = await client
+				.From<Apartment>()
+				.Filter( "location", Operator.ILike, $"%{location}%" )
+				.Get();
+			if ( response.Models.Count == 0 )
+			{
+				return NotFound( "No apartments found for the specified location." );
+			}
+			return Ok( response.Models );
+		}
+		catch ( Exception ex )
+		{
+			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
+		}
+	}
+	
+	[AllowAnonymous]
+	[HttpPost("get_property_by_gategory/")]
+	public async Task<IActionResult> GetPropertyByCategory( [FromBody] List<string>? categoryNames )
+	{
+		if ( categoryNames == null || categoryNames.Count == 0 )
+		{
+			return BadRequest( "Invalid category ID." );
+		}
+		try
+		{
+			// call stored procedure to get apartments by category
+			var response = await client.Rpc( "get_apartments_by_categories",
+				new Dictionary<string, List<string>>
+				{
+					{ "category_names", categoryNames }
+				} );
+			
+			if(response.Content == null) return NotFound();
+			var apartments = JsonConvert.DeserializeObject<List<Apartment>>(response.Content);
+			return Ok(apartments);
+		}
+		catch ( Exception ex )
+		{
+			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
+		}
+	}
+	
+	[AllowAnonymous]
+	[HttpGet("categories")]
+	public async Task<IActionResult> GetCategories()
+	{
+		try
+		{
+			var response = await client
+				.From<Category>()
+				.Select( "*" )
+				.Get();
+
+			if ( response.Models.Count == 0 )
+			{
+				return NotFound( "No categories found." );
+			}
+
+			return Ok( response.Models );
+		}
+		catch ( Exception ex )
+		{
+			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
+		}
+	}
+	[HttpPost( "categories/add" )]
+	public async Task<IActionResult> AddCategory( [FromBody] Category category )
+	{
+		if ( string.IsNullOrWhiteSpace( category.Name ) )
+		{
+			return BadRequest( "Category name is required." );
+		}
+		
+		// Check if category already exists
+		var existingCategoryResponse = await client
+			.From<Category>()
+			.Where( c => c.Name == category.Name )
+			.Get();
+		if ( existingCategoryResponse.Models.Count > 0 )
+		{
+			return Conflict( "Category with this name already exists." );
+		}
+		
+		category.CreatedAt = DateTime.UtcNow;
+		category.UpdatedAt = DateTime.UtcNow;
+
+		var result = await client
+			.From<Category>()
+			.Insert( category );
+
+		return Ok( result.Models.FirstOrDefault() );
+	}
+
+	[HttpPut( "categories/update")]
+	public async Task<IActionResult> updateCategory( [FromBody]Category category)
+	{
+		if ( string.IsNullOrWhiteSpace( category.Name ) )
+		{
+			return BadRequest( "Category is required." );
+		}
+
+		
+		category.UpdatedAt = DateTime.UtcNow;
+
+		var result = await client
+			.From<Category>()
+			.Upsert( category );
+
+		return Ok( result.Models.FirstOrDefault() );
+	}
+	
+	
+	[AllowAnonymous]
 	// PUT: api/apartments/5
 	[HttpPut( "{id:long}" )]
 	public async Task<IActionResult> Update( long id, [FromBody] Apartment updated )
@@ -277,8 +403,8 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		{
 			var filters = new List<IPostgrestQueryFilter>
 			{
-				new Supabase.Postgrest.QueryFilter( "title", Supabase.Postgrest.Constants.Operator.ILike, $"%{query}%" ),
-				new Supabase.Postgrest.QueryFilter( "description", Supabase.Postgrest.Constants.Operator.ILike, $"%{query}%" )
+				new Supabase.Postgrest.QueryFilter( "title", Operator.ILike, $"%{query}%" ),
+				new Supabase.Postgrest.QueryFilter( "description", Operator.ILike, $"%{query}%" )
 			};
 			var apartmentsRequest = await client
 				.From<Apartment>()
@@ -311,4 +437,100 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		}
 	}
 
+	// TODO: implemete this
+	[HttpPost( "{apartmentId:long}/review" )]
+	public async Task<IActionResult> AddReview( long apartmentId, [FromBody] Reviews review )
+	{
+		await Task.Delay( 0 );
+		return Ok();
+	}
+
+	// create a new booking
+	[HttpPost( "{apartmentId:long}/book" )]
+	public async Task<IActionResult> BookApartment( long apartmentId, DateTime checkIn, DateTime checkOut, int numGuests )
+	{
+		Console.WriteLine( $"Apartment id: {apartmentId}" );
+		var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
+		if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var guestId ) )
+		{
+			return Unauthorized( "Invalid or missing user ID." );
+		}
+
+		if ( checkOut <= checkIn )
+		{
+			return BadRequest( "Check-out date must be after check-in date." );
+		}
+
+		var apartmentResponse = await client
+			.From<Apartment>()
+			.Where( a => a.Id == apartmentId )
+			.Get();
+		var apartment = apartmentResponse.Models.FirstOrDefault();
+		if ( apartment == null )
+		{
+			return NotFound( "Apartment not found." );
+		}
+
+		var checkInIso = checkIn.ToString( "yyyy-MM-ddTHH:mm:ss" );
+		var checkOutIso = checkOut.ToString( "yyyy-MM-ddTHH:mm:ss" );
+
+		var overlapCheck = await client
+			.From<Booking>()
+			.Filter( "apartment_id", Operator.Equals, apartmentId.ToString() ) // convert to string
+			.Filter( "status", Operator.Equals, "Booked" )
+			.Filter( "check_in_date", Operator.LessThan, checkOutIso ) // string format
+			.Filter( "check_out_date", Operator.GreaterThan, checkInIso ) // string format
+			.Get();
+
+		if ( overlapCheck.Models.Count != 0 )
+		{
+			return Conflict( "Apartment is already booked for the selected dates." );
+		}
+
+		Console.WriteLine( $"Check in : {checkIn}, Check out: {checkOut}, num of guests: {numGuests}" );
+
+		// Calculate pricing
+		var nights = ( checkOut - checkIn ).Days;
+		double basePrice = (double)apartment.PricePerNight * nights;
+		double cleaningFee = 50; // Example
+		double serviceFee = basePrice * 0.1;
+		double taxes = basePrice * 0.05;
+		double totalAmount = basePrice + cleaningFee + serviceFee + taxes;
+		Console.WriteLine( $"{nights} \n{basePrice} \n{cleaningFee} \n{serviceFee} \n{taxes} \n{totalAmount}" );
+
+		var booking = new Booking
+		{
+			ApartmentId = apartmentId,
+			GuestId = guestId,
+			HostId = apartment.OwnerId,
+			CheckInDate = checkIn,
+			CheckOutDate = checkOut,
+			//Nights = nights,
+			NumGuests = numGuests,
+			BasePrice = basePrice,
+			CleaningFee = cleaningFee,
+			ServiceFee = serviceFee,
+			Taxes = taxes,
+			TotalAmount = totalAmount,
+			Status = "pending",
+			CreatedAt = DateTime.UtcNow
+		};
+
+		//Console.WriteLine( booking.Nights );
+		var result = await client.From<Booking>().Insert( booking );
+		var createdBooking = result.Models.FirstOrDefault();
+
+		// Optional: insert into rent_history
+		var history = new RentHistory
+		{
+			UserId = guestId,
+			ApartmentId = apartmentId,
+			StartDate = checkIn,
+			EndDate = checkOut,
+			CreatedAt = DateTime.UtcNow,
+			Status = "pending"
+		};
+		await client.From<RentHistory>().Insert( history );
+		return Ok( createdBooking );
+	}
 }
