@@ -7,6 +7,7 @@ using Supabase.Postgrest.Interfaces;
 using System.Security.Claims;
 using Newtonsoft.Json;
 using static Supabase.Postgrest.Constants;
+using AgrlyAPI.Models.Users;
 
 namespace AgrlyAPI.Controllers.Apartments;
 
@@ -48,11 +49,11 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		try
 		{
 			var apartmentsResponse = await client
-		.From<Apartment>()
-		.Select( "*" )
-		.Order( "rating", Ordering.Descending )
-		.Range( from, to )
-		.Get();
+				.From<Apartment>()
+				.Select( "*" )
+				.Order( "rating", Ordering.Descending )
+				.Range( from, to )
+				.Get();
 
 			var apartments = apartmentsResponse.Models;
 
@@ -88,6 +89,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 					.Select( tagId => tagDict[tagId] )
 					.ToList()!;
 			}
+
 			var response = new AvailableApartmentsResponse
 			{
 				Apartments = apartments,
@@ -105,7 +107,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			return StatusCode( StatusCodes.Status500InternalServerError, "Unexpected error: " + ex.Message );
 		}
 	}
-	
+
 	[HttpGet( "gethistory/{userid}" )]
 	public async Task<IActionResult> GetRentHistory( string userId )
 	{
@@ -140,6 +142,8 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			return StatusCode( 500, $"Server error: {ex.Message}" );
 		}
 	}
+
+	[AllowAnonymous]
 	// GET: api/apartments/5
 	[HttpGet( "{id:long}" )]
 	public async Task<IActionResult> GetById( long id )
@@ -160,6 +164,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		{
 			return NotFound();
 		}
+
 		var reviews = reviewsResponse.Models;
 		var apartmentByIdResponse = new ApartmentByIdResponse
 		{
@@ -182,7 +187,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 		var response = await client
 			.From<Apartment>()
-			.Filter( "owner_id",Operator.Equals, ownerId )
+			.Filter( "owner_id", Operator.Equals, ownerId )
 			.Get();
 
 		return Ok( response.Models );
@@ -209,13 +214,14 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 	}
 
 	[AllowAnonymous]
-	[HttpGet("get_property_by_location/{location}")]
+	[HttpGet( "get_property_by_location/{location}" )]
 	public async Task<IActionResult> GetPropertyByLocation( string location )
 	{
 		if ( string.IsNullOrWhiteSpace( location ) )
 		{
 			return BadRequest( "Location cannot be empty." );
 		}
+
 		try
 		{
 			var response = await client
@@ -226,6 +232,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			{
 				return NotFound( "No apartments found for the specified location." );
 			}
+
 			return Ok( response.Models );
 		}
 		catch ( Exception ex )
@@ -233,15 +240,16 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
 		}
 	}
-	
+
 	[AllowAnonymous]
-	[HttpPost("get_property_by_gategory/")]
+	[HttpPost( "get_property_by_gategory/" )]
 	public async Task<IActionResult> GetPropertyByCategory( [FromBody] List<string>? categoryNames )
 	{
 		if ( categoryNames == null || categoryNames.Count == 0 )
 		{
 			return BadRequest( "Invalid category ID." );
 		}
+
 		try
 		{
 			// call stored procedure to get apartments by category
@@ -250,19 +258,19 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 				{
 					{ "category_names", categoryNames }
 				} );
-			
-			if(response.Content == null) return NotFound();
-			var apartments = JsonConvert.DeserializeObject<List<Apartment>>(response.Content);
-			return Ok(apartments);
+
+			if ( response.Content == null ) return NotFound();
+			var apartments = JsonConvert.DeserializeObject<List<Apartment>>( response.Content );
+			return Ok( apartments );
 		}
 		catch ( Exception ex )
 		{
 			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
 		}
 	}
-	
+
 	[AllowAnonymous]
-	[HttpGet("categories")]
+	[HttpGet( "categories" )]
 	public async Task<IActionResult> GetCategories()
 	{
 		try
@@ -284,6 +292,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 			return StatusCode( StatusCodes.Status500InternalServerError, $"Server error: {ex.Message}" );
 		}
 	}
+
 	[HttpPost( "categories/add" )]
 	public async Task<IActionResult> AddCategory( [FromBody] Category category )
 	{
@@ -291,7 +300,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		{
 			return BadRequest( "Category name is required." );
 		}
-		
+
 		// Check if category already exists
 		var existingCategoryResponse = await client
 			.From<Category>()
@@ -301,7 +310,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		{
 			return Conflict( "Category with this name already exists." );
 		}
-		
+
 		category.CreatedAt = DateTime.UtcNow;
 		category.UpdatedAt = DateTime.UtcNow;
 
@@ -312,15 +321,15 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		return Ok( result.Models.FirstOrDefault() );
 	}
 
-	[HttpPut( "categories/update")]
-	public async Task<IActionResult> updateCategory( [FromBody]Category category)
+	[HttpPut( "categories/update" )]
+	public async Task<IActionResult> updateCategory( [FromBody] Category category )
 	{
 		if ( string.IsNullOrWhiteSpace( category.Name ) )
 		{
 			return BadRequest( "Category is required." );
 		}
 
-		
+
 		category.UpdatedAt = DateTime.UtcNow;
 
 		var result = await client
@@ -329,39 +338,163 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 		return Ok( result.Models.FirstOrDefault() );
 	}
-	
-	
-	[AllowAnonymous]
+
+
 	// PUT: api/apartments/5
 	[HttpPut( "{id:long}" )]
 	public async Task<IActionResult> Update( long id, [FromBody] Apartment updated )
 	{
 		var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );
-		if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var ownerId ) )
+		if ( userIdClaim == null || !long.TryParse( userIdClaim.Value, out var userId ) )
 		{
 			return Unauthorized();
 		}
 
-		var existing = await client
+		var apartmentResponse = await client
 			.From<Apartment>()
 			.Where( a => a.Id == id )
 			.Get();
 
-		var original = existing.Models.FirstOrDefault();
-		if ( original == null || original.OwnerId != ownerId )
+		var apartment = apartmentResponse.Models.FirstOrDefault();
+		if ( apartment == null )
 		{
-			return Forbid( "You do not own this apartment." );
+			return NotFound( "Apartment not found." );
 		}
 
-		// Update only allowed fields
-		original.Title = updated.Title ?? original.Title;
-		original.Description = updated.Description ?? original.Description;
+		var userResponse = await client
+			.From<User>()
+			.Where( u => u.Id == userId )
+			.Get();
 
-		var result = await client
-			.From<Apartment>()
-			.Update( original );
+		var user = userResponse.Models.FirstOrDefault();
+		if ( user == null )
+		{
+			return BadRequest( "User not found." );
+		}
 
-		return Ok( result.Models.FirstOrDefault() );
+		Console.WriteLine( $"Recieved apartment update request: {updated.PricePerNight}" );
+		if ( user.IsAdmin || apartment.OwnerId == user.Id )
+		{
+			updated.OwnerId = apartment.OwnerId;
+			if ( updated.Title != null )
+			{
+				apartment.Title = updated.Title;
+			}
+
+			if ( updated.Description != null )
+			{
+				apartment.Description = updated.Description;
+			}
+
+			if ( updated.Location != null )
+			{
+				apartment.Location = updated.Location;
+			}
+
+			if ( updated.PricePerNight > 0 )
+			{
+				apartment.PricePerNight = updated.PricePerNight;
+			}
+
+			if ( updated.Bedrooms > 0 )
+			{
+				apartment.Bedrooms = updated.Bedrooms;
+			}
+
+			if ( updated.MaxGuests > 0 )
+			{
+				apartment.MaxGuests = updated.MaxGuests;
+			}
+
+			if ( updated.SquareMeter > 0 )
+			{
+				apartment.SquareMeter = updated.SquareMeter;
+			}
+
+			if ( updated.Amenities != null )
+			{
+				apartment.Amenities = updated.Amenities;
+			}
+
+			if ( updated.AvailabilityStatus != null )
+			{
+				apartment.AvailabilityStatus = updated.AvailabilityStatus;
+			}
+
+			if ( updated.MinimumStay > 0 )
+			{
+				apartment.MinimumStay = updated.MinimumStay;
+			}
+
+			if ( updated.AddressLine1 != null )
+			{
+				apartment.AddressLine1 = updated.AddressLine1;
+			}
+
+			if ( updated.AddressLine2 != null )
+			{
+				apartment.AddressLine2 = updated.AddressLine2;
+			}
+
+			if ( updated.City != null )
+			{
+				apartment.City = updated.City;
+			}
+
+			if ( updated.State != null )
+			{
+				apartment.State = updated.State;
+			}
+
+			if ( updated.Country != null )
+			{
+				apartment.Country = updated.Country;
+			}
+
+			if ( updated.PostalCode != null )
+			{
+				apartment.PostalCode = updated.PostalCode;
+			}
+
+			if ( updated.Latitude.HasValue )
+			{
+				apartment.Latitude = updated.Latitude.Value;
+			}
+
+			if ( updated.Longitude.HasValue )
+			{
+				apartment.Longitude = updated.Longitude.Value;
+			}
+
+			if ( updated.PropertyType != null )
+			{
+				apartment.PropertyType = updated.PropertyType;
+			}
+
+			if ( updated.InstantBook )
+			{
+				apartment.InstantBook = updated.InstantBook;
+			}
+
+			// if (updated.Rating.HasValue) apartment.Rating = updated.Rating.Value;
+			if ( updated.Photos != null )
+			{
+				apartment.Photos = updated.Photos;
+			}
+
+			apartment.UpdatedAt = DateTime.UtcNow;
+
+			await client
+				.From<Apartment>()
+				.Where( a => a.Id == id )
+				.Update( apartment );
+			
+			
+
+			return Ok( "Updated" );
+		}
+
+		return Forbid("You are not authorized to update this apartment." );
 	}
 
 
@@ -387,7 +520,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		return StatusCode( StatusCodes.Status410Gone, "Apartment deleted successfully." );
 	}
 
-
+	[AllowAnonymous]
 	// TODO: This needs more testing
 	[HttpGet( "search" )]
 	public async Task<IActionResult> Search( string query, int currentPage = 0 )
@@ -397,6 +530,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 		{
 			currentPage = 0;
 		}
+
 		int from = currentPage * pageSize;
 		int to = from + pageSize - 1;
 		try
@@ -423,6 +557,7 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 				};
 				return Ok( emptyResponse );
 			}
+
 			var response = new AvailableApartmentsResponse
 			{
 				Apartments = apartments,
@@ -447,7 +582,8 @@ public class ApartmentsController( Supabase.Client client ) : ControllerBase
 
 	// create a new booking
 	[HttpPost( "{apartmentId:long}/book" )]
-	public async Task<IActionResult> BookApartment( long apartmentId, DateTime checkIn, DateTime checkOut, int numGuests )
+	public async Task<IActionResult> BookApartment( long apartmentId, DateTime checkIn, DateTime checkOut,
+		int numGuests )
 	{
 		Console.WriteLine( $"Apartment id: {apartmentId}" );
 		var userIdClaim = User.Claims.FirstOrDefault( c => c.Type == ClaimTypes.NameIdentifier );

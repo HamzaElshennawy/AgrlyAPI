@@ -17,6 +17,7 @@ public class Category : BaseModel
 	[Column( "is_active" )] public bool IsActive { get; set; }
 
 	[Column( "display_order" )] public int DisplayOrder { get; set; }
+	[Column("img_path")] public string? ImgPath { get; set; }
 
 	[Column( "created_at" )] public DateTime CreatedAt { get; set; }
 
