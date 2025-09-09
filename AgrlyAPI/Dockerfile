@@ -4,8 +4,8 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Use SDK 10 to satisfy global.json (requested SDK 10.0.0)
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# Use SDK 8 to match project target (net8.0). Delete repo global.json before build to avoid SDK version mismatch.
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
@@ -13,8 +13,12 @@ WORKDIR /src
 COPY ["AgrlyAPI/AgrlyAPI.csproj", "AgrlyAPI/"]
 RUN dotnet restore "./AgrlyAPI/AgrlyAPI.csproj"
 
-# copy rest of source and build
+# copy rest of source
 COPY . .
+
+# Remove global.json from build context if present to avoid SDK resolution errors
+RUN rm -f /src/global.json || true
+
 WORKDIR "/src/AgrlyAPI"
 RUN dotnet build "AgrlyAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
