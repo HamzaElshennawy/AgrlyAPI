@@ -18,7 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers().AddNewtonsoftJson();
-builder.Services.AddOpenApi();
+//builder.Services.AddOpenApi();
 builder.Services.AddCors( options =>
 {
 	options.AddPolicy( "AllowAll",
