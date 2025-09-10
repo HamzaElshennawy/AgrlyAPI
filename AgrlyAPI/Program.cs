@@ -6,8 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using System.Threading.RateLimiting;
-using TickerQ.Dashboard.DependencyInjection;
-using TickerQ.DependencyInjection;
+//using TickerQ.Dashboard.DependencyInjection;
+//using TickerQ.DependencyInjection;
 
 
 var builder = WebApplication.CreateBuilder( args );
@@ -18,7 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers().AddNewtonsoftJson();
-//builder.Services.AddOpenApi();
+builder.Services.AddOpenApi();
 builder.Services.AddCors( options =>
 {
 	options.AddPolicy( "AllowAll",
@@ -74,11 +74,11 @@ builder.Services.AddAuthentication( options =>
 	};
 } );
 
-builder.Services.AddTickerQ( options =>
-{
-	options.AddDashboard( basePath: "/tickerq" );
-	options.AddDashboardBasicAuth();
-} );
+//builder.Services.AddTickerQ( options =>
+//{
+//	options.AddDashboard( basePath: "/tickerq" );
+//	options.AddDashboardBasicAuth();
+//} );
 
 builder.Services.AddAuthorization();
 
